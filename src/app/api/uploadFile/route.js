@@ -1,4 +1,3 @@
-// File: /app/api/uploadFile/route.js
 import fs from "fs";
 import path from "path";
 import { NextResponse } from "next/server";
@@ -44,7 +43,7 @@ async function waitForFilesActive(files) {
 
 /**
  * This API route accepts a POST request with FormData containing a file.
- * It saves the file temporarily, uploads it to Gemini, waits for processing to complete,
+ * It saves the file temporarily (using /tmp), uploads it to Gemini, waits for processing to complete,
  * then returns the uploaded file's context.
  */
 export async function POST(req) {
@@ -56,9 +55,9 @@ export async function POST(req) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    // Create a temporary directory if it doesn't exist.
-    const tempDir = path.join(process.cwd(), "tmp");
-    fs.mkdirSync(tempDir, { recursive: true });
+    // Use the /tmp directory (the only writable location in Vercel's serverless functions)
+    const tempDir = "/tmp";
+    await fs.promises.mkdir(tempDir, { recursive: true });
     const tempFilePath = path.join(tempDir, file.name);
 
     // Write the file to disk.
@@ -71,10 +70,10 @@ export async function POST(req) {
     // Wait until the file is processed and ACTIVE.
     await waitForFilesActive([uploadedFile]);
 
-    // Optionally, remove the temporary file.
+    // Remove the temporary file.
     await fs.promises.unlink(tempFilePath);
 
-    // Return the uploaded file's details (including URI, mimeType, etc.)
+    // Return the uploaded file's details.
     return NextResponse.json(uploadedFile, { status: 200 });
   } catch (error) {
     console.error("Error in file upload:", error);
