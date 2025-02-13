@@ -35,6 +35,8 @@ export async function POST(req) {
       history: history || [],
     });
 
+    console.log("Chat history:", JSON.stringify(history, null, 2));
+
     // Send the new user prompt.
     const result = await chatSession.sendMessage(prompt);
     const responseText = result.response.candidates[0].content.parts[0].text;
