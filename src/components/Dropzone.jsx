@@ -3,11 +3,13 @@ import { useState } from "react";
 import { Progress } from "@/components/ui/progress";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
 
 export default function Dropzone({ onFileUploaded }) {
   const [loading, setLoading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [prompt, setPrompt] = useState("");
   const { toast } = useToast();
 
   // Simulate progress updates until the API call is complete.
@@ -35,23 +37,30 @@ export default function Dropzone({ onFileUploaded }) {
     });
   };
 
-  // Updated file upload function that sends a base64 encoded PDF to /brain.
-  const handleFileUpload = async (file) => {
+  // Updated function to handle both file upload and prompt submission.
+  const handleUploadOrPrompt = async (file, promptText) => {
     setLoading(true);
     simulateProgress(); // Start simulating progress
 
     try {
-      // Convert the file to a base64 encoded string.
-      const fileUrl = URL.createObjectURL(file);
-      const base64EncodedPDF = await fileToBase64(file).then(
-        (data) => data.split(",")[1]
-      );
+      let body = {};
+      if (file) {
+        // Convert the file to a base64 encoded string.
+        const fileUrl = URL.createObjectURL(file);
+        const base64EncodedPDF = await fileToBase64(file).then(
+          (data) => data.split(",")[1]
+        );
+        body.base64 = base64EncodedPDF;
+      }
+      if (promptText) {
+        body.prompt = promptText;
+      }
 
-      // Send the base64 data to your /brain endpoint.
+      // Send the data to your /brain endpoint.
       const res = await fetch("/api/brain", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ base64: base64EncodedPDF }),
+        body: JSON.stringify(body),
       });
 
       const brainResponse = await res.json();
@@ -65,7 +74,10 @@ export default function Dropzone({ onFileUploaded }) {
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       // Pass the response (and optionally the base64 data) to the parent component.
-      await onFileUploaded({ brainResponse, fileUrl });
+      await onFileUploaded({
+        brainResponse,
+        fileUrl: file ? URL.createObjectURL(file) : null,
+      });
     } catch (error) {
       console.error(error);
       toast({
@@ -83,7 +95,7 @@ export default function Dropzone({ onFileUploaded }) {
     setIsDragging(false);
     const file = e.dataTransfer.files[0];
     if (file) {
-      await handleFileUpload(file);
+      await handleUploadOrPrompt(file, prompt);
     }
   };
 
@@ -99,7 +111,25 @@ export default function Dropzone({ onFileUploaded }) {
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      await handleFileUpload(file);
+      await handleUploadOrPrompt(file, prompt);
+    }
+  };
+
+  const handlePromptSubmit = async () => {
+    if (prompt.trim()) {
+      console.log("Prompt submitted:", prompt);
+      await handleUploadOrPrompt(null, prompt);
+      setPrompt("");
+    }
+  };
+
+  const handleBackgroundClick = (e) => {
+    if (
+      e.target.tagName !== "TEXTAREA" &&
+      e.target.tagName !== "BUTTON" &&
+      e.target.id !== "file-upload"
+    ) {
+      document.getElementById("file-upload")?.click();
     }
   };
 
@@ -109,6 +139,7 @@ export default function Dropzone({ onFileUploaded }) {
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
+      onClick={handleBackgroundClick}
     >
       {/* Base Background Layer: Dot grid with inverse radial gradient */}
       <motion.div
@@ -142,7 +173,7 @@ export default function Dropzone({ onFileUploaded }) {
               radial-gradient(circle, #d1d5db 1px, transparent 1px)
             `,
           backgroundSize: loading
-            ? ["100% 100%, 20px 20px", "100% 100%, 25px 25px"]
+            ? ["100% 100%, 20px 20px"]
             : "100% 100%, 25px 25px",
         }}
         transition={{
@@ -171,15 +202,9 @@ export default function Dropzone({ onFileUploaded }) {
               form.
             </p>
             <p className="text-sm text-gray-500">
-              Or click{" "}
-              <span
-                className="underline cursor-pointer"
-                onClick={() => document.getElementById("file-upload")?.click()}
-              >
-                here
-              </span>{" "}
-              to upload.
+              Or click anywhere to upload.
             </p>
+            <h2 className="text-4xl font-bold mb-4">or</h2>
             <input
               type="file"
               accept="application/pdf"
@@ -187,6 +212,23 @@ export default function Dropzone({ onFileUploaded }) {
               className="hidden"
               id="file-upload"
             />
+            <div className="mt-6">
+              <textarea
+                className="w-full h-32 p-2 border rounded"
+                placeholder="Enter your prompt here..."
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handlePromptSubmit();
+                  }
+                }}
+              />
+              <Button className="mt-2" onClick={handlePromptSubmit}>
+                Submit Prompt
+              </Button>
+            </div>
           </>
         )}
       </div>

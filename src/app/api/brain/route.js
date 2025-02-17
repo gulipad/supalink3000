@@ -26,18 +26,28 @@ const generationConfig = {
 };
 
 export async function POST(req) {
-  const fileData = await req.json();
+  const requestData = await req.json();
 
   try {
-    const result = await model.generateContent([
-      {
-        inlineData: {
-          data: fileData.base64,
-          mimeType: "application/pdf",
+    let result;
+    if (requestData.base64) {
+      result = await model.generateContent([
+        {
+          inlineData: {
+            data: requestData.base64,
+            mimeType: "application/pdf",
+          },
         },
-      },
-      "Follow system instructions",
-    ]);
+        "Follow system instructions",
+      ]);
+    } else if (requestData.prompt) {
+      result = await model.generateContent(requestData.prompt);
+    } else {
+      return NextResponse.json(
+        { error: "No valid input provided" },
+        { status: 400 }
+      );
+    }
 
     const responseText = result.response.text();
 
