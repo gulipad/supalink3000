@@ -123,23 +123,12 @@ export default function Dropzone({ onFileUploaded }) {
     }
   };
 
-  const handleBackgroundClick = (e) => {
-    if (
-      e.target.tagName !== "TEXTAREA" &&
-      e.target.tagName !== "BUTTON" &&
-      e.target.id !== "file-upload"
-    ) {
-      document.getElementById("file-upload")?.click();
-    }
-  };
-
   return (
     <div
       className="relative min-h-screen flex flex-col items-center justify-center"
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
-      onClick={handleBackgroundClick}
     >
       {/* Base Background Layer: Dot grid with inverse radial gradient */}
       <motion.div
@@ -202,7 +191,14 @@ export default function Dropzone({ onFileUploaded }) {
               form.
             </p>
             <p className="text-sm text-gray-500">
-              Or click anywhere to upload.
+              Click{" "}
+              <span
+                className="underline cursor-pointer"
+                onClick={() => document.getElementById("file-upload")?.click()}
+              >
+                here
+              </span>{" "}
+              to upload.
             </p>
             <h2 className="text-4xl font-bold mb-4">or</h2>
             <input
