@@ -50,7 +50,7 @@ export default function BuyerInput({
       {submitted ? (
         <Card className="border-none p-0 shadow-none">
           <CardHeader className="text-center">
-            <CardTitle className="flex flex-col items-center space-y-4">
+            <CardTitle className="flex flex-col items-center space-y-4 text-2xl">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-12 w-12 text-green-500"
@@ -75,7 +75,7 @@ export default function BuyerInput({
           {/* Step 1: Add company details */}
           <Card className="border-none p-0 shadow-none">
             <CardHeader>
-              <CardTitle>1. Add company details</CardTitle>
+              <CardTitle className="text-2xl">1. Add company details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
@@ -117,7 +117,7 @@ export default function BuyerInput({
           {/* Step 2: Choose how to pay */}
           <Card className="border-none p-0 shadow-none">
             <CardHeader>
-              <CardTitle>2. Choose how to pay</CardTitle>
+              <CardTitle className="text-2xl">2. Choose how to pay</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <RadioGroup value={paymentTerm} onValueChange={setPaymentTerm}>
@@ -152,7 +152,7 @@ export default function BuyerInput({
           {/* Step 3: Sign */}
           <Card className="border-none p-0 shadow-none">
             <CardHeader>
-              <CardTitle>3. Sign</CardTitle>
+              <CardTitle className="text-2xl">3. Sign</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <Input placeholder="Name" defaultValue={buyerData?.name} />
@@ -177,7 +177,7 @@ export default function BuyerInput({
           {/* Step 4: Pay */}
           <Card className="border-none p-0 shadow-none">
             <CardHeader>
-              <CardTitle>4. Pay</CardTitle>
+              <CardTitle className="text-2xl">4. Pay</CardTitle>
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="direct-debit">
