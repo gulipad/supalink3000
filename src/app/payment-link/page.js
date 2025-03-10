@@ -140,14 +140,16 @@ export default function PaymentLinkPage() {
                       Subscription Payments
                     </p>
                     <div className="flex justify-between items-center text-sm font-medium mt-1">
-                      <span className="flex items-center gap-2">
-                        From{" "}
-                        {formatDateUTC(summary.subscription.overallStartDate)}{" "}
-                        to {formatDateUTC(summary.subscription.overallEndDate)}
-                        <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full text-xs">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                        <span>
+                          {formatDateUTC(summary.subscription.overallStartDate)}{" "}
+                          to{" "}
+                          {formatDateUTC(summary.subscription.overallEndDate)}
+                        </span>
+                        <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full text-xs w-fit">
                           {summary.subscription.totalInstallments} installments
                         </span>
-                      </span>
+                      </div>
                       {summary.subscription.minInstallmentAmount !==
                       summary.subscription.maxInstallmentAmount ? (
                         <span className="font-bold text-xl">
