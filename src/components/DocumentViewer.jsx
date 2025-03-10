@@ -7,13 +7,17 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 
-export default function DocumentViewer({ fileUrl }) {
-  console.log(fileUrl);
+export default function DocumentViewer({ fileUrl, base64 }) {
+  // Create data URL from base64 if provided
+  const documentUrl = base64
+    ? `data:application/pdf;base64,${base64}`
+    : fileUrl;
+
   return (
     <div className="w-full h-full overflow-auto bg-gray-50 flex items-center justify-center">
-      {fileUrl ? (
+      {documentUrl ? (
         <iframe
-          src={fileUrl} // Use the URI of the uploaded file
+          src={documentUrl}
           className="w-full h-full"
           title="Document Viewer"
         />

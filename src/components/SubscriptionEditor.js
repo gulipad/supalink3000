@@ -166,7 +166,7 @@ function PaymentTooltipContent({ active, payload, label }) {
 }
 
 // Main component
-export default function SubscriptionEditor({ brainResponse }) {
+export default function SubscriptionEditor({ brainResponse, base64 }) {
   const {
     buyerCompanyName,
     buyerCompanyAddress,
@@ -250,6 +250,13 @@ export default function SubscriptionEditor({ brainResponse }) {
 
   // Process invoice items into financing periods.
   const processFinancingPeriods = () => {
+    // Log buyer and invoice data
+    console.log({
+      buyerData,
+      invoiceData: invoiceItems,
+      base64,
+    });
+
     const periods = groupByFinancingPeriods(invoiceItems);
     console.log("Items to be grouped:", invoiceItems);
     setFinancingPeriods(periods);

@@ -95,7 +95,10 @@ export default function HomePage() {
               <DocumentViewer fileUrl={fileData.fileUrl} />
             </div>
             <div className="col-span-2 bg-white flex items-center justify-center shadow-lg shadow-gray-300">
-              <SubscriptionEditor brainResponse={fileData.brainResponse} />
+              <SubscriptionEditor
+                brainResponse={fileData.brainResponse}
+                base64={fileData.base64Data}
+              />
             </div>
           </motion.div>
         )}

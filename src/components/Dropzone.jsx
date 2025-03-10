@@ -44,12 +44,14 @@ export default function Dropzone({ onFileUploaded }) {
 
     try {
       let body = {};
+      let fileUrl = null;
+      let base64EncodedPDF = null;
+
       if (file) {
         // Convert the file to a base64 encoded string.
-        const fileUrl = URL.createObjectURL(file);
-        const base64EncodedPDF = await fileToBase64(file).then(
-          (data) => data.split(",")[1]
-        );
+        fileUrl = URL.createObjectURL(file);
+        const base64Result = await fileToBase64(file);
+        base64EncodedPDF = base64Result.split(",")[1];
         body.base64 = base64EncodedPDF;
       }
       if (promptText) {
@@ -76,7 +78,8 @@ export default function Dropzone({ onFileUploaded }) {
       // Pass the response (and optionally the base64 data) to the parent component.
       await onFileUploaded({
         brainResponse,
-        fileUrl: file ? URL.createObjectURL(file) : null,
+        fileUrl: fileUrl,
+        base64Data: base64EncodedPDF,
       });
     } catch (error) {
       console.error(error);
