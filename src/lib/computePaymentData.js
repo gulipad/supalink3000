@@ -7,6 +7,47 @@ export function addMonths(date, months) {
 }
 
 /**
+ * Calculates the approximate number of months between two dates,
+ * handling edge cases where dates might be off by a few days
+ * @param {Date} startDate - the start date
+ * @param {Date} endDate - the end date
+ * @returns {number} - the calculated number of months
+ */
+function calculateMonthsBetween(startDate, endDate) {
+  // Get years and months difference
+  const yearDiff = endDate.getFullYear() - startDate.getFullYear();
+  const monthDiff = endDate.getMonth() - startDate.getMonth();
+
+  // Base calculation
+  let months = yearDiff * 12 + monthDiff;
+
+  // Handle the day differences
+  const dayDiff = endDate.getDate() - startDate.getDate();
+
+  // If end date's day is earlier than start date's day by more than 7 days,
+  // it's not a complete month
+  if (dayDiff < -7) {
+    months -= 1;
+  }
+  // If end date's day is later than start date's day by more than 7 days,
+  // it's almost a complete extra month
+  else if (dayDiff > 7) {
+    months += 1;
+  }
+
+  // Handle exact 12-month scenarios with slight variations
+  if (months === 11 && dayDiff > 20) {
+    // Almost 12 months, round up
+    months = 12;
+  } else if (months === 13 && dayDiff < -20) {
+    // Just over 12 months but off by a few days, round down
+    months = 12;
+  }
+
+  return Math.max(months, 0); // Ensure we never return negative months
+}
+
+/**
  * Processes invoice data and returns a structured object
  * @param {Array} invoiceData - the raw invoice data array
  * @param {string} paymentTerm - "monthly" or "quarterly"
@@ -26,14 +67,10 @@ export function computePaymentData(invoiceData, paymentTerm) {
     const start = new Date(invoice.startDate);
     const end = new Date(invoice.endDate);
 
-    // Compute month difference (inclusive)
-    const monthDiff =
-      (end.getFullYear() - start.getFullYear()) * 12 +
-      (end.getMonth() - start.getMonth()) +
-      1;
+    // Improved month difference calculation
+    const monthDiff = calculateMonthsBetween(start, end);
 
-    // Number of installments, ignoring invoice.paymentTerms
-    // and using the user’s chosen paymentTerm:
+    // Number of installments based on payment term
     const installmentCount =
       paymentTerm === "monthly" ? monthDiff : Math.ceil(monthDiff / 3);
 
@@ -42,13 +79,32 @@ export function computePaymentData(invoiceData, paymentTerm) {
 
     // Generate a schedule (even if it's zero) so detail view can show it
     const schedule = [];
-    let currentDate = start;
-    for (let i = 0; i < installmentCount; i++) {
-      schedule.push({
-        date: new Date(currentDate),
-        amount: installmentAmount,
-      });
-      currentDate = addMonths(currentDate, paymentTerm === "monthly" ? 1 : 3);
+    let currentDate = new Date(start);
+
+    // Distribute installments evenly throughout the period
+    if (installmentCount > 0) {
+      const interval = paymentTerm === "monthly" ? 1 : 3;
+
+      for (let i = 0; i < installmentCount; i++) {
+        schedule.push({
+          date: new Date(currentDate),
+          amount: installmentAmount,
+        });
+
+        // Add the interval, but ensure we don't go past end date for the last payment
+        if (i < installmentCount - 1) {
+          currentDate = addMonths(currentDate, interval);
+        } else {
+          // For the last payment, ensure it's not after the end date
+          const lastPaymentDate = addMonths(currentDate, interval);
+          if (lastPaymentDate > end) {
+            // If adding interval would go past end date, use the end date instead
+            currentDate = new Date(end);
+          } else {
+            currentDate = lastPaymentDate;
+          }
+        }
+      }
     }
 
     return {

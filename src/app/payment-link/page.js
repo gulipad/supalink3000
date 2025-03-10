@@ -9,7 +9,7 @@ import BuyerInput from "@/components/BuyerInput";
 import { mockData } from "@/lib/mockData";
 import { motion } from "framer-motion";
 import { computePaymentData } from "@/lib/computePaymentData";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -43,8 +43,14 @@ export default function PaymentLinkPage() {
   const [isCardExpanded, setIsCardExpanded] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [data, setData] = useState(mockData);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Simulate a loading delay
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 900);
+
     // Get the URL parameters
     const urlParams = new URLSearchParams(window.location.search);
     const id = urlParams.get("id");
@@ -61,6 +67,8 @@ export default function PaymentLinkPage() {
         });
       }
     }
+
+    return () => clearTimeout(timer);
   }, []);
 
   // Compute the payment data based on the invoice data and payment term
@@ -71,6 +79,14 @@ export default function PaymentLinkPage() {
 
   const toggleCardExpansion = () => setIsCardExpanded(!isCardExpanded);
   const openDetailsDialog = () => setIsDialogOpen(true);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="animate-spin h-10 w-10 text-gray-500" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-screen">

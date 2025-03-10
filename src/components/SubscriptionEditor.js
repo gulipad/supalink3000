@@ -219,6 +219,11 @@ export default function SubscriptionEditor({ brainResponse, base64 }) {
 
   // When the user clicks Continue, process the data and show the financing view.
   const processFinancingPeriods = () => {
+    console.log("Data to be stored in localStorage:", {
+      buyerData,
+      invoiceData: invoiceItems,
+      base64,
+    });
     setViewFinancing(true);
   };
 
@@ -248,7 +253,7 @@ export default function SubscriptionEditor({ brainResponse, base64 }) {
     setTimeout(() => {
       setIsLoading(false);
       setIsLinkCopied(true);
-    }, 2000);
+    }, 1500);
   };
 
   // Compute payment data (using a default "monthly" term)
@@ -413,6 +418,16 @@ export default function SubscriptionEditor({ brainResponse, base64 }) {
         // Confirmation / Financing View
         <div className="h-screen overflow-hidden flex flex-col w-full">
           <div className="bg-white p-8 overflow-auto flex-grow space-y-6">
+            {/* Navigation */}
+            <div className="flex items-center gap-4 mb-6">
+              <Button
+                variant="outline"
+                onClick={() => setViewFinancing(false)}
+                className="text-sm"
+              >
+                Back
+              </Button>
+            </div>
             {/* Payment Summary */}
             <h2 className="text-2xl font-semibold mb-4">Payment Summary</h2>
             <div className="max-w-3xl mx-auto">
