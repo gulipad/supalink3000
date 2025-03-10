@@ -24,7 +24,7 @@ export default function DocumentViewer({ fileUrl, base64 }) {
       ) : (
         <Card className="text-center p-6">
           <CardHeader>
-            <CardTitle>Prompt-generated schedule</CardTitle>
+            <CardTitle>Nothing to see here</CardTitle>
             <CardDescription>No invoice was provided.</CardDescription>
           </CardHeader>
         </Card>

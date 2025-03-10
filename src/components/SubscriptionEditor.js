@@ -1,27 +1,35 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { FaEdit, FaCheck, FaTrash } from "react-icons/fa";
+import { Loader2 } from "lucide-react";
+
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Bar, BarChart, XAxis, ResponsiveContainer, Cell } from "recharts";
-import { ChartTooltip } from "@/components/ui/chart";
-import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { computePaymentData } from "@/lib/computePaymentData";
 
-// Helper function to format dates
-const formatDate = (dateString) => {
-  const date = new Date(dateString);
-  const options = { day: "2-digit", month: "short", year: "numeric" };
-  return date.toLocaleDateString("en-US", options).replace(",", "");
+// Helper to convert cents to dollars
+function convert(amountInCents) {
+  return amountInCents / 100;
+}
+
+// Helper function to format dates (from Date objects)
+const formatDateUTC = (date) => {
+  if (!date) return "N/A";
+  return new Date(date).toLocaleDateString("en-US", {
+    timeZone: "UTC",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 };
 
 // EditableField for text/date inputs
@@ -135,36 +143,6 @@ function EditableCurrencyField({ id, label, defaultValue, onChange }) {
   );
 }
 
-// Custom tooltip component for the payment bar chart using a Card for styling
-function PaymentTooltipContent({ active, payload, label }) {
-  if (active && payload && payload.length) {
-    const data = payload[0].payload;
-    const paymentDate = new Date(data.date);
-    return (
-      <Card className="bg-white shadow-md">
-        <CardContent className="p-2">
-          <div className="text-sm font-bold">
-            {paymentDate.toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            })}
-          </div>
-          <div className="text-xs text-gray-500">Period: {data.period}</div>
-          <div className="text-sm">
-            Amount: $
-            {data.amount.toLocaleString("en-US", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-  return null;
-}
-
 // Main component
 export default function SubscriptionEditor({ brainResponse, base64 }) {
   const {
@@ -190,18 +168,9 @@ export default function SubscriptionEditor({ brainResponse, base64 }) {
     }))
   );
 
-  // State for processed financing periods.
-  const [financingPeriods, setFinancingPeriods] = useState([]);
   const [viewFinancing, setViewFinancing] = useState(false);
-  const [paymentFrequency, setPaymentFrequency] = useState("monthly");
-  const [payments, setPayments] = useState([]);
-
-  // Recompute payments whenever financing periods, payment frequency, or viewFinancing changes.
-  useEffect(() => {
-    if (viewFinancing) {
-      setPayments(calculatePayments());
-    }
-  }, [financingPeriods, paymentFrequency, viewFinancing]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLinkCopied, setIsLinkCopied] = useState(false);
 
   // Validate required fields.
   const isFormValid = () => {
@@ -248,119 +217,42 @@ export default function SubscriptionEditor({ brainResponse, base64 }) {
     return messages.length > 0 ? `Missing fields: ${messages.join(", ")}` : "";
   };
 
-  // Process invoice items into financing periods.
+  // When the user clicks Continue, process the data and show the financing view.
   const processFinancingPeriods = () => {
-    // Log buyer and invoice data
-    console.log({
-      buyerData,
-      invoiceData: invoiceItems,
-      base64,
-    });
-
-    const periods = groupByFinancingPeriods(invoiceItems);
-    console.log("Items to be grouped:", invoiceItems);
-    setFinancingPeriods(periods);
     setViewFinancing(true);
   };
 
-  // Calculate payments for each financing period with dates, period info, and dynamic colors.
-  const calculatePayments = () => {
-    const payments = [];
-    // Define colors for different periods.
-    const periodColors = [
-      "#8884d8",
-      "#82ca9d",
-      "#ffc658",
-      "#FF5733",
-      "#0088FE",
-    ];
+  // Create payment link handler
+  const createPaymentLink = () => {
+    setIsLoading(true);
 
-    financingPeriods.forEach((period, periodIndex) => {
-      const periodColor = periodColors[periodIndex % periodColors.length];
-      const periodStartDate = new Date(period.startDate);
-      const periodEndDate = new Date(period.endDate);
-      let numInstallments;
-      if (paymentFrequency === "monthly") {
-        numInstallments =
-          (periodEndDate.getFullYear() - periodStartDate.getFullYear()) * 12 +
-          (periodEndDate.getMonth() - periodStartDate.getMonth()) +
-          1;
-      } else if (paymentFrequency === "quarterly") {
-        numInstallments = Math.ceil(
-          ((periodEndDate.getFullYear() - periodStartDate.getFullYear()) * 12 +
-            (periodEndDate.getMonth() - periodStartDate.getMonth()) +
-            1) /
-            3
-        );
-      }
+    // Generate random 6 character id
+    const id = Math.random().toString(36).substring(2, 8);
 
-      // Separate special charges from regular items.
-      const specialItems = period.items.filter((item) => item.isSpecialCharge);
-      const regularItems = period.items.filter((item) => !item.isSpecialCharge);
-      const totalRegularCents = regularItems.reduce(
-        (sum, item) => sum + item.serviceAmount,
-        0
-      );
-      const totalSpecialCents = specialItems.reduce(
-        (sum, item) => sum + item.serviceAmount,
-        0
-      );
+    // Store data in localStorage
+    localStorage.setItem(
+      id,
+      JSON.stringify({
+        buyerData,
+        invoiceData: invoiceItems,
+        base64,
+      })
+    );
 
-      if (totalSpecialCents > 0) {
-        // Special distribution: add special charges only to the first payment.
-        const installmentRegularCents = Math.floor(
-          totalRegularCents / numInstallments
-        );
-        const remainderRegularCents =
-          totalRegularCents - installmentRegularCents * numInstallments;
-        for (let i = 0; i < numInstallments; i++) {
-          let paymentDate = new Date(periodStartDate);
-          if (paymentFrequency === "monthly") {
-            paymentDate.setMonth(paymentDate.getMonth() + i);
-          } else if (paymentFrequency === "quarterly") {
-            paymentDate.setMonth(paymentDate.getMonth() + i * 3);
-          }
-          let amountCents;
-          if (i === 0) {
-            amountCents =
-              installmentRegularCents +
-              remainderRegularCents +
-              totalSpecialCents;
-          } else {
-            amountCents = installmentRegularCents;
-          }
-          payments.push({
-            date: paymentDate.toISOString().split("T")[0],
-            amount: amountCents / 100,
-            period: periodIndex + 1,
-            fill: periodColor,
-          });
-        }
-      } else {
-        // No special charges; distribute the total amount evenly.
-        const totalCents = totalRegularCents;
-        const installmentCents = Math.floor(totalCents / numInstallments);
-        const remainderCents = totalCents - installmentCents * numInstallments;
-        for (let i = 0; i < numInstallments; i++) {
-          let paymentDate = new Date(periodStartDate);
-          if (paymentFrequency === "monthly") {
-            paymentDate.setMonth(paymentDate.getMonth() + i);
-          } else if (paymentFrequency === "quarterly") {
-            paymentDate.setMonth(paymentDate.getMonth() + i * 3);
-          }
-          const extra = i < remainderCents ? 1 : 0; // distribute extra cents
-          payments.push({
-            date: paymentDate.toISOString().split("T")[0],
-            amount: (installmentCents + extra) / 100,
-            period: periodIndex + 1,
-            fill: periodColor,
-          });
-        }
-      }
-    });
+    // Create URL with id parameter
+    const url = `${window.location.origin}${window.location.pathname}payment-link?id=${id}`;
 
-    return payments;
+    // Copy to clipboard
+    navigator.clipboard.writeText(url);
+
+    setTimeout(() => {
+      setIsLoading(false);
+      setIsLinkCopied(true);
+    }, 2000);
   };
+
+  // Compute payment data (using a default "monthly" term)
+  const { summary, details } = computePaymentData(invoiceItems, "monthly");
 
   return (
     <div className="h-screen overflow-hidden flex flex-col w-full">
@@ -518,175 +410,195 @@ export default function SubscriptionEditor({ brainResponse, base64 }) {
           </div>
         </>
       ) : (
-        <>
-          {/* Payment Schedule */}
-          <div className="p-6 mt-6 rounded-md flex-grow overflow-auto">
-            <h3 className="text-2xl font-semibold mb-4">Payment Schedule</h3>
-            <RadioGroup
-              value={paymentFrequency}
-              onValueChange={(value) => setPaymentFrequency(value)}
-              className="mb-4"
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="monthly" id="monthly" />
-                <Label
-                  htmlFor="monthly"
-                  onClick={() => setPaymentFrequency("monthly")}
-                >
-                  Monthly
-                </Label>
+        // Confirmation / Financing View
+        <div className="h-screen overflow-hidden flex flex-col w-full">
+          <div className="bg-white p-8 overflow-auto flex-grow space-y-6">
+            {/* Payment Summary */}
+            <h2 className="text-2xl font-semibold mb-4">Payment Summary</h2>
+            <div className="max-w-3xl mx-auto">
+              {/* Subscription Payments Summary */}
+              <div>
+                <p className="text-sm font-medium text-gray-600">
+                  Subscription Payments
+                </p>
+                <div className="flex justify-between items-center text-sm font-medium mt-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                    <span>
+                      {formatDateUTC(summary.subscription.overallStartDate)} to{" "}
+                      {formatDateUTC(summary.subscription.overallEndDate)}
+                    </span>
+                    <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full text-xs">
+                      {summary.subscription.totalInstallments} installments
+                    </span>
+                  </div>
+                  {summary.subscription.minInstallmentAmount !==
+                  summary.subscription.maxInstallmentAmount ? (
+                    <span className="font-bold text-xl">
+                      $
+                      {convert(
+                        summary.subscription.minInstallmentAmount
+                      ).toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}{" "}
+                      to $
+                      {convert(
+                        summary.subscription.maxInstallmentAmount
+                      ).toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                      /month
+                    </span>
+                  ) : (
+                    <span className="font-bold text-xl">
+                      $
+                      {convert(
+                        summary.subscription.minInstallmentAmount
+                      ).toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                      /month
+                    </span>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="quarterly" id="quarterly" />
-                <Label
-                  htmlFor="quarterly"
-                  onClick={() => setPaymentFrequency("quarterly")}
-                >
-                  Quarterly
-                </Label>
-              </div>
-            </RadioGroup>
-            <div className="w-full">
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={payments}>
-                  <XAxis
-                    dataKey="date"
-                    tickFormatter={(value) => {
-                      const date = new Date(value);
-                      return date.toLocaleDateString("en-US", {
-                        month: "short",
-                      });
-                    }}
-                  />
-                  <ChartTooltip content={<PaymentTooltipContent />} />
-                  <Bar dataKey="amount">
-                    {payments.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={entry.fill}
-                        radius={[4, 4, 0, 0]}
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Display Financing Periods */}
-            <h3 className="text-2xl font-semibold mb-4 mt-6">
-              Credit breakdown
-            </h3>
-            {financingPeriods.map((period, index) => {
-              const totalAmount = period.items.reduce(
-                (sum, item) => sum + item.serviceAmount,
-                0
-              );
-              return (
-                <div key={index} className="mb-4">
-                  <h4 className="text-l font-bold">Period {index + 1}</h4>
-                  <p className="text-sm text-gray-500">
-                    {formatDate(period.startDate)} &#8594;{" "}
-                    {formatDate(period.endDate)}
-                  </p>
-                  <ul className="mt-2">
-                    {period.items.map((item) => (
-                      <li key={item.id} className="flex justify-between">
-                        <span className="italic text-sm flex-grow">
-                          {item.serviceTitle}
-                        </span>
-                        <span className="italic text-sm ml-2">
-                          {`$${(item.serviceAmount / 100).toLocaleString(
-                            "en-US",
-                            {
+              {summary.oneOff.length > 0 && (
+                <>
+                  <Separator className="my-4" />
+                  {/* One‑off Payments Summary */}
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">
+                      One‑off Payments
+                    </p>
+                    <ul className="space-y-1 mt-1">
+                      {summary.oneOff.map((fee) => (
+                        <li
+                          key={fee.id}
+                          className="flex justify-between items-center text-sm font-medium"
+                        >
+                          <span className="flex items-center gap-2">
+                            {fee.serviceTitle}
+                            <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full text-xs">
+                              Due {formatDateUTC(fee.dueDate)}
+                            </span>
+                          </span>
+                          <span className="font-bold text-xl">
+                            $
+                            {convert(fee.amount).toLocaleString(undefined, {
                               minimumFractionDigits: 2,
                               maximumFractionDigits: 2,
-                            }
-                          )}`}
+                            })}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </>
+              )}
+            </div>
+            {/* Detailed Payment Data */}
+            <div className="space-y-6">
+              {/* Subscription Invoices */}
+              <div>
+                <h2 className="text-2xl font-semibold mb-4">Full Details</h2>
+                <h3 className="text-lg font-semibold mb-2">
+                  Subscription Invoices
+                </h3>
+                <ul className="space-y-2">
+                  {details.subscriptionDetails.map((item) => (
+                    <li key={item.id} className="border p-2 rounded">
+                      <div className="flex justify-between text-sm font-medium">
+                        <span>{item.serviceTitle}</span>
+                        <span>
+                          $
+                          {convert(item.totalAmount).toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {formatDateUTC(item.startDate)} -{" "}
+                        {formatDateUTC(item.endDate)}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* One‑off Fee Details */}
+              {details.oneOffDetails.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">
+                    One‑off Payments
+                  </h3>
+                  <ul className="space-y-2">
+                    {details.oneOffDetails.map((fee) => (
+                      <li
+                        key={fee.id}
+                        className="flex justify-between text-sm font-medium border p-2 rounded"
+                      >
+                        <span>{fee.serviceTitle}</span>
+                        <span>
+                          $
+                          {convert(fee.amount).toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
                         </span>
                       </li>
                     ))}
                   </ul>
-                  <hr className="my-2" />
-                  <div className="flex justify-end font-bold">
-                    <span>{`$${(totalAmount / 100).toLocaleString("en-US", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}`}</span>
-                  </div>
                 </div>
-              );
-            })}
+              )}
+
+              {/* Payment Schedule */}
+              <div>
+                <h3 className="text-lg font-semibold mb-2">Payment Schedule</h3>
+                <ul className="space-y-2">
+                  {summary.subscription.schedule.map((payment, index) => (
+                    <li
+                      key={index}
+                      className="flex justify-between text-sm font-medium border p-2 rounded"
+                    >
+                      <span>{formatDateUTC(payment.date)}</span>
+                      <span>
+                        $
+                        {convert(payment.amount).toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
           </div>
 
-          {/* Back Button */}
+          {/* Create Payment Link Button */}
           <div className="p-4 bg-white border-t border-light-gray">
             <Button
-              variant="outline"
-              className="w-full py-3 font-bold"
-              onClick={() => setViewFinancing(false)}
+              className="w-full py-3 text-white bg-black rounded font-bold"
+              onClick={createPaymentLink}
+              disabled={isLinkCopied}
             >
-              Back
+              {isLoading ? (
+                <>
+                  <Loader2 className="animate-spin" />
+                  Just a second...
+                </>
+              ) : isLinkCopied ? (
+                "Link copied to clipboard ✅"
+              ) : (
+                "Create Payment Link"
+              )}
             </Button>
           </div>
-        </>
+        </div>
       )}
     </div>
   );
-}
-
-// Group invoice items into financing periods.
-function groupByFinancingPeriods(items) {
-  const periods = [];
-  const specialCharges = [];
-
-  const sorted = [...items].sort(
-    (a, b) => new Date(a.startDate) - new Date(b.startDate)
-  );
-
-  sorted.forEach((item) => {
-    const itemStart = item.startDate ? new Date(item.startDate) : null;
-    const itemEnd = item.endDate ? new Date(item.endDate) : null;
-    let merged = false;
-
-    if (item.isSpecialCharge) {
-      specialCharges.push(item);
-    } else {
-      for (let period of periods) {
-        const periodStart = new Date(period.startDate);
-        const periodEnd = new Date(period.endDate);
-
-        if (itemStart >= periodStart && itemEnd <= periodEnd) {
-          period.items.push(item);
-          merged = true;
-          break;
-        }
-      }
-    }
-
-    if (!merged && !item.isSpecialCharge) {
-      periods.push({
-        startDate: item.startDate,
-        endDate: item.endDate,
-        items: [item],
-      });
-    }
-  });
-
-  if (specialCharges.length > 0) {
-    if (periods.length > 0) {
-      periods[0].items.push(...specialCharges);
-    } else {
-      periods.push({
-        startDate: new Date().toISOString().split("T")[0],
-        endDate: new Date().toISOString().split("T")[0],
-        items: specialCharges,
-      });
-    }
-  }
-
-  return periods.map(({ startDate, endDate, items }) => ({
-    startDate,
-    endDate,
-    items,
-  }));
 }

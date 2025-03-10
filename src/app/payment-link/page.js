@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import DocumentViewer from "@/components/DocumentViewer";
 import BuyerInput from "@/components/BuyerInput";
@@ -16,6 +16,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
 
 // Helper to format dates consistently in UTC
 function formatDateUTC(date) {
@@ -37,10 +42,30 @@ export default function PaymentLinkPage() {
   const [paymentTerm, setPaymentTerm] = useState("monthly");
   const [isCardExpanded, setIsCardExpanded] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [data, setData] = useState(mockData);
+
+  useEffect(() => {
+    // Get the URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const id = urlParams.get("id");
+
+    if (id) {
+      // Get data from localStorage using the ID
+      const storedData = localStorage.getItem(id);
+      if (storedData) {
+        const parsedData = JSON.parse(storedData);
+        setData({
+          buyerData: parsedData.buyerData,
+          invoiceData: parsedData.invoiceData,
+          base64: parsedData.base64,
+        });
+      }
+    }
+  }, []);
 
   // Compute the payment data based on the invoice data and payment term
   const { summary, details } = computePaymentData(
-    mockData.invoiceData,
+    data.invoiceData,
     paymentTerm
   );
 
@@ -50,10 +75,12 @@ export default function PaymentLinkPage() {
   return (
     <div className="flex flex-col h-screen">
       {/* Sticky Navbar */}
-      <nav className="sticky top-0 bg-white z-10 border-b">
-        <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between">
+      <nav className="sticky top-0 bg-white z-10 border-b px-14">
+        <div className="px-4 py-2 flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <span className="font-bold text-xl">Your Company</span>
+            <div className="h-10 w-auto flex-shrink-0">
+              <img src="/logo.svg" alt="Logo" className="h-full w-auto" />
+            </div>
           </div>
           <div>
             <Button variant="ghost">Contact support</Button>
@@ -61,166 +88,186 @@ export default function PaymentLinkPage() {
         </div>
       </nav>
 
-      {/* Main Content */}
-      <div className="flex flex-1 overflow-hidden">
-        <BuyerInput
-          buyerData={mockData.buyerData}
-          paymentTerm={paymentTerm}
-          setPaymentTerm={setPaymentTerm}
-          totalAmount={convert(
-            mockData.invoiceData.reduce(
-              (sum, invoice) => sum + invoice.serviceAmount,
-              0
-            )
-          )}
-        />
+      {/* Main Content with Resizable Panels */}
+      <div className="flex-1 overflow-hidden">
+        <ResizablePanelGroup direction="horizontal">
+          <ResizablePanel defaultSize={35} minSize={30}>
+            <div className="h-full overflow-y-auto p-4">
+              <BuyerInput
+                buyerData={data.buyerData}
+                paymentTerm={paymentTerm}
+                setPaymentTerm={setPaymentTerm}
+                totalAmount={convert(
+                  data.invoiceData.reduce(
+                    (sum, invoice) => sum + invoice.serviceAmount,
+                    0
+                  )
+                )}
+              />
+            </div>
+          </ResizablePanel>
 
-        {/* PDF Preview and Floating Summary */}
-        <div className="hidden md:block md:w-1/2 relative">
-          <div className="h-full w-full">
-            <DocumentViewer base64={mockData.base64} />
-          </div>
+          <ResizableHandle withHandle />
 
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{
-              type: "spring",
-              stiffness: 300,
-              damping: 15,
-              mass: 0.3,
-            }}
-            className="absolute bottom-4 mx-4 w-[calc(100%-2rem)]"
-          >
-            {/* Summary Card */}
-            <Card className="bg-white border shadow-2xl">
-              <div
-                className="px-6 py-4 cursor-pointer"
-                onClick={toggleCardExpansion}
-              >
-                <div className="flex justify-between items-center">
-                  <span className="text-xl font-semibold">Payment summary</span>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openDetailsDialog();
-                      }}
-                    >
-                      View full details
-                    </Button>
-                    <motion.div
-                      animate={{ rotate: isCardExpanded ? 180 : 0 }}
-                      transition={{ duration: 0.3, ease: "easeInOut" }}
-                    >
-                      <ChevronDown className="h-5 w-5 text-gray-500" />
-                    </motion.div>
-                  </div>
-                </div>
+          <ResizablePanel defaultSize={50} minSize={40}>
+            <div className="h-full relative">
+              <div className="h-full w-full">
+                <DocumentViewer base64={data.base64} />
               </div>
 
               <motion.div
-                animate={{
-                  height: isCardExpanded ? "auto" : 0,
-                  opacity: isCardExpanded ? 1 : 0,
-                }}
-                initial={false}
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
                 transition={{
-                  height: { duration: 0.3, ease: "easeInOut" },
-                  opacity: { duration: 0.2, ease: "easeInOut" },
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 15,
+                  mass: 0.3,
                 }}
-                style={{ overflow: "hidden" }}
+                className="absolute bottom-4 mx-4 w-[calc(100%-2rem)]"
               >
-                <CardContent className="space-y-4 pt-0">
-                  {/* Subscription Payments Summary */}
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">
-                      Subscription Payments
-                    </p>
-                    <div className="flex justify-between items-center text-sm font-medium mt-1">
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                        <span>
-                          {formatDateUTC(summary.subscription.overallStartDate)}{" "}
-                          to{" "}
-                          {formatDateUTC(summary.subscription.overallEndDate)}
-                        </span>
-                        <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full text-xs w-fit">
-                          {summary.subscription.totalInstallments} installments
-                        </span>
+                {/* Summary Card */}
+                <Card className="bg-gray-800/80 backdrop-blur-lg border border-gray-700 shadow-2xl max-w-3xl mx-auto">
+                  <div
+                    className="px-6 py-4 cursor-pointer"
+                    onClick={toggleCardExpansion}
+                  >
+                    <div className="flex justify-between items-center">
+                      <span className="text-xl font-semibold text-white">
+                        Payment summary
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openDetailsDialog();
+                          }}
+                          className="text-white"
+                        >
+                          View full details
+                        </Button>
+                        <motion.div
+                          animate={{ rotate: isCardExpanded ? 180 : 0 }}
+                          transition={{ duration: 0.3, ease: "easeInOut" }}
+                        >
+                          <ChevronDown className="h-5 w-5 text-gray-300" />
+                        </motion.div>
                       </div>
-                      {summary.subscription.minInstallmentAmount !==
-                      summary.subscription.maxInstallmentAmount ? (
-                        <span className="font-bold text-xl">
-                          $
-                          {convert(
-                            summary.subscription.minInstallmentAmount
-                          ).toLocaleString(undefined, {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
-                          <span className="text-s font-normal"> to </span>$
-                          {convert(
-                            summary.subscription.maxInstallmentAmount
-                          ).toLocaleString(undefined, {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
-                          /{paymentTerm === "monthly" ? "month" : "quarter"}
-                        </span>
-                      ) : (
-                        <span className="font-bold text-xl">
-                          $
-                          {convert(
-                            summary.subscription.minInstallmentAmount
-                          ).toLocaleString(undefined, {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
-                          /{paymentTerm === "monthly" ? "month" : "quarter"}
-                        </span>
-                      )}
                     </div>
                   </div>
 
-                  <Separator />
-
-                  {/* One‑off Payments Summary */}
-                  {summary.oneOff.length > 0 && (
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">
-                        One‑off Payments
-                      </p>
-                      <ul className="space-y-1 mt-1">
-                        {summary.oneOff.map((fee) => (
-                          <li
-                            key={fee.id}
-                            className="flex justify-between items-center text-sm font-medium"
-                          >
-                            <span className="flex items-center gap-2">
-                              {fee.serviceTitle}
-                              <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full text-xs">
-                                Due {formatDateUTC(fee.dueDate)}
-                              </span>
+                  <motion.div
+                    animate={{
+                      height: isCardExpanded ? "auto" : 0,
+                      opacity: isCardExpanded ? 1 : 0,
+                    }}
+                    initial={false}
+                    transition={{
+                      height: { duration: 0.3, ease: "easeInOut" },
+                      opacity: { duration: 0.2, ease: "easeInOut" },
+                    }}
+                    style={{ overflow: "hidden" }}
+                  >
+                    <CardContent className="space-y-4 pt-0">
+                      {/* Subscription Payments Summary */}
+                      <div>
+                        <p className="text-sm font-medium text-gray-400">
+                          Subscription Payments
+                        </p>
+                        <div className="flex justify-between items-center text-sm font-medium mt-1 text-white">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                            <span>
+                              {formatDateUTC(
+                                summary.subscription.overallStartDate
+                              )}{" "}
+                              to{" "}
+                              {formatDateUTC(
+                                summary.subscription.overallEndDate
+                              )}
                             </span>
+                            <span className="bg-gray-700 text-gray-300 px-2 py-0.5 rounded-full text-xs w-fit">
+                              {summary.subscription.totalInstallments}{" "}
+                              installments
+                            </span>
+                          </div>
+                          {summary.subscription.minInstallmentAmount !==
+                          summary.subscription.maxInstallmentAmount ? (
                             <span className="font-bold text-xl">
                               $
-                              {convert(fee.amount).toLocaleString(undefined, {
+                              {convert(
+                                summary.subscription.minInstallmentAmount
+                              ).toLocaleString(undefined, {
                                 minimumFractionDigits: 2,
                                 maximumFractionDigits: 2,
                               })}
+                              <span className="text-s font-normal"> to </span>$
+                              {convert(
+                                summary.subscription.maxInstallmentAmount
+                              ).toLocaleString(undefined, {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}
+                              /{paymentTerm === "monthly" ? "month" : "quarter"}
                             </span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </CardContent>
+                          ) : (
+                            <span className="font-bold text-xl">
+                              $
+                              {convert(
+                                summary.subscription.minInstallmentAmount
+                              ).toLocaleString(undefined, {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}
+                              /{paymentTerm === "monthly" ? "month" : "quarter"}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      {/* One‑off Payments Summary */}
+                      {summary.oneOff.length > 0 && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-400">
+                            One‑off Payments
+                          </p>
+                          <ul className="space-y-1 mt-1">
+                            {summary.oneOff.map((fee) => (
+                              <li
+                                key={fee.id}
+                                className="flex justify-between items-center text-sm font-medium text-white"
+                              >
+                                <span className="flex items-center gap-2">
+                                  {fee.serviceTitle}
+                                  <span className="bg-gray-700 text-gray-300 px-2 py-0.5 rounded-full text-xs">
+                                    Due {formatDateUTC(fee.dueDate)}
+                                  </span>
+                                </span>
+                                <span className="font-bold text-xl">
+                                  $
+                                  {convert(fee.amount).toLocaleString(
+                                    undefined,
+                                    {
+                                      minimumFractionDigits: 2,
+                                      maximumFractionDigits: 2,
+                                    }
+                                  )}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </CardContent>
+                  </motion.div>
+                </Card>
               </motion.div>
-            </Card>
-          </motion.div>
-        </div>
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </div>
 
       {/* Payment Details Dialog */}

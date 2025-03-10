@@ -10,6 +10,7 @@ export default function HomePage() {
   const [step, setStep] = useState("upload");
   const [fileData, setFileData] = useState(null);
 
+  // Uncomment this to mock an upload to work on the editor.
   // const info = {
   //   brainResponse: {
   //     buyerCompanyName: "Athos Group, LLC",
@@ -74,7 +75,6 @@ export default function HomePage() {
   // const [fileData, setFileData] = useState(info);
 
   const handleFileUploaded = async (data) => {
-    console.log("HERE: ", data);
     setFileData(data);
     setStep("view");
   };
