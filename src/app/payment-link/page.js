@@ -32,7 +32,7 @@ export default function PaymentLinkPage() {
         <div className="px-16 py-2 flex items-center justify-between">
           <div className="flex items-center space-x-2 w-full">
             {/* Replace with company logo if desired */}
-            <span className="font-bold text-xl">{mockData.buyerData.buyerCompanyName}</span>
+            <span className="font-bold text-xl">Domo</span>
           </div>
           <div>
             <Button variant="ghost">Contact support</Button>
