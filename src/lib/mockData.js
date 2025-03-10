@@ -23,7 +23,7 @@ export const mockData = {
       serviceDescription:
         "Standard Credits and Card Loads from November 1, 2024 to October 31, 2025.",
       isSpecialCharge: false,
-      serviceAmount: 5000000,
+      serviceAmount: 50000.00,
       startDate: "2024-11-01",
       endDate: "2025-10-31",
       paymentTerms: "monthly",
@@ -34,7 +34,7 @@ export const mockData = {
       serviceDescription:
         "Standard Credits and Card Loads from November 1, 2025 to October 31, 2026.",
       isSpecialCharge: false,
-      serviceAmount: 5000000,
+      serviceAmount: 50000.00,
       startDate: "2025-11-01",
       endDate: "2026-10-31",
       paymentTerms: "monthly",
@@ -45,7 +45,7 @@ export const mockData = {
       serviceDescription:
         "Standard Credits and Card Loads from November 1, 2026 to October 31, 2027.",
       isSpecialCharge: false,
-      serviceAmount: 5000000,
+      serviceAmount: 50000.00,
       startDate: "2026-11-01",
       endDate: "2027-10-31",
       paymentTerms: "monthly",
@@ -56,7 +56,7 @@ export const mockData = {
       serviceDescription:
         "Custom Consulting (Per Hour).\n(hours expire after one year)",
       isSpecialCharge: true,
-      serviceAmount: 4922500,
+      serviceAmount: 49225.00,
       startDate: null,
       endDate: null,
       paymentTerms: "one-time",

@@ -29,10 +29,10 @@ export default function PaymentLinkPage() {
     <div className="flex flex-col h-screen">
       {/* Sticky Navbar */}
       <nav className="sticky top-0 bg-white z-10 border-b">
-        <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            {/* Replace with your company logo if desired */}
-            <span className="font-bold text-xl">Your Company</span>
+        <div className="px-16 py-2 flex items-center justify-between">
+          <div className="flex items-center space-x-2 w-full">
+            {/* Replace with company logo if desired */}
+            <span className="font-bold text-xl">{mockData.buyerData.buyerCompanyName}</span>
           </div>
           <div>
             <Button variant="ghost">Contact support</Button>
