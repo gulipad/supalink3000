@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 
 /**
  * BuyerInput receives:
@@ -161,11 +162,13 @@ export default function BuyerInput({
               <Input placeholder="Your Signature" defaultValue={buyerData?.signature} />
               <div className="space-y-2">
                 <div className="flex items-top space-x-2">
+                  <Checkbox id="agreement-checkbox" />
                   <Label htmlFor="agreement-checkbox" className="text-sm">
                     I have reviewed and agree to the Capchase Pay Agreement
                   </Label>
                 </div>
                 <div className="flex items-top space-x-2">
+                  <Checkbox id="business-use-checkbox" />
                   <Label htmlFor="business-use-checkbox" className="text-sm">
                     By checking this box, I acknowledge that this financing is being obtained solely for commercial use. I affirm that I am utilizing the funds solely for business-related activities.
                   </Label>
@@ -230,11 +233,7 @@ export default function BuyerInput({
                   ></path>
                 </svg>
               ) : (
-                `Pay $${(totalAmount / (paymentTerm === "monthly" ? 12 : 4))
-                  .toLocaleString("en-US", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}`
+                "Confirm and Pay"
               )}
             </Button>
             
