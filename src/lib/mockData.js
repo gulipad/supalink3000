@@ -34,7 +34,7 @@ export const mockData = {
       serviceDescription:
         "Standard Credits and Card Loads from November 1, 2025 to October 31, 2026.",
       isSpecialCharge: false,
-      serviceAmount: 5000000,
+      serviceAmount: 10000000,
       startDate: "2025-11-01",
       endDate: "2026-10-31",
       paymentTerms: "monthly",
