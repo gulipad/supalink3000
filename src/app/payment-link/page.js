@@ -42,16 +42,40 @@ export default function PaymentLinkPage() {
   const [paymentTerm, setPaymentTerm] = useState("monthly");
   const [isCardExpanded, setIsCardExpanded] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [data, setData] = useState(mockData);
+  const [data, setData] = useState(undefined);
   const [isLoading, setIsLoading] = useState(true);
+  const [receivedExternalData, setReceivedExternalData] = useState(false);
+
+  const handleMessage = (event) => {
+    // You can specify allowed origins for security
+    // if (event.origin !== "https://allowed-origin.com") return;
+
+    try {
+      const { id, data } = event.data;
+      console.log("Received message:", event.data);
+      if (id && data) {
+        localStorage.setItem(id, JSON.stringify(data));
+
+        const url = new URL(window.location);
+        url.searchParams.set("id", id);
+        window.history.pushState({}, "", url);
+
+        setData({
+          buyerData: data.buyerData,
+          invoiceData: data.invoiceData,
+          base64: data.base64,
+        });
+        setReceivedExternalData(true);
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.error("Error processing message:", error);
+    }
+  };
 
   useEffect(() => {
-    // Simulate a loading delay
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 900);
+    window.addEventListener("message", handleMessage);
 
-    // Get the URL parameters
     const urlParams = new URLSearchParams(window.location.search);
     const id = urlParams.get("id");
 
@@ -65,28 +89,43 @@ export default function PaymentLinkPage() {
           invoiceData: parsedData.invoiceData,
           base64: parsedData.base64,
         });
+        setReceivedExternalData(true);
+        setIsLoading(false);
       }
     }
 
-    return () => clearTimeout(timer);
-  }, []);
+    const timer = setTimeout(() => {
+      if (!receivedExternalData) {
+        console.log(
+          "No external data received after 10 seconds, using mockData"
+        );
+        setData(mockData);
+      }
+      setIsLoading(false);
+    }, 10000);
 
-  // Compute the payment data based on the invoice data and payment term
-  const { summary, details } = computePaymentData(
-    data.invoiceData,
-    paymentTerm
-  );
+    // Clean up event listener and timer
+    return () => {
+      window.removeEventListener("message", handleMessage);
+      clearTimeout(timer);
+    };
+  }, [receivedExternalData]);
 
   const toggleCardExpansion = () => setIsCardExpanded(!isCardExpanded);
   const openDetailsDialog = () => setIsDialogOpen(true);
 
-  if (isLoading) {
+  if (isLoading || !data) {
     return (
       <div className="flex items-center justify-center h-screen">
         <Loader2 className="animate-spin h-10 w-10 text-gray-500" />
       </div>
     );
   }
+
+  const { summary, details } = computePaymentData(
+    data.invoiceData,
+    paymentTerm
+  );
 
   return (
     <div className="flex flex-col h-screen">
