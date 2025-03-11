@@ -44,6 +44,8 @@ export default function PaymentLinkPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [data, setData] = useState(mockData);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPaymentSubmitted, setIsPaymentSubmitted] = useState(false);
+  const [fadeOutRight, setFadeOutRight] = useState(false);
 
   useEffect(() => {
     // Simulate a loading delay
@@ -80,6 +82,11 @@ export default function PaymentLinkPage() {
   const toggleCardExpansion = () => setIsCardExpanded(!isCardExpanded);
   const openDetailsDialog = () => setIsDialogOpen(true);
 
+  const handlePaymentSubmit = () => {
+    setFadeOutRight(true);
+    setIsPaymentSubmitted(true);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -105,7 +112,7 @@ export default function PaymentLinkPage() {
       </nav>
 
       {/* Main Content with Resizable Panels */}
-      <div className="flex-1 overflow-hidden">
+      <div className={`flex-1 overflow-hidden ${isPaymentSubmitted ? 'hidden' : ''}`}>
         <ResizablePanelGroup direction="horizontal">
           <ResizablePanel defaultSize={35} minSize={30}>
             <div className="h-full overflow-y-auto p-4">
@@ -119,13 +126,14 @@ export default function PaymentLinkPage() {
                     0
                   )
                 )}
+                onPaymentSubmit={handlePaymentSubmit}
               />
             </div>
           </ResizablePanel>
 
           <ResizableHandle withHandle />
 
-          <ResizablePanel defaultSize={50} minSize={40}>
+          <ResizablePanel defaultSize={50} minSize={40} className={`transition-opacity duration-500 ${fadeOutRight ? 'opacity-0' : 'opacity-100'}`}>
             <div className="h-full relative">
               <div className="h-full w-full">
                 <DocumentViewer base64={data.base64} />
@@ -255,7 +263,7 @@ export default function PaymentLinkPage() {
                             </div>
                           </div>
 
-                          <Separator />
+                          <Separator className="bg-gray-500" />
 
                           {/* One‑off Payments Summary */}
                           {summary.oneOff.length > 0 && (
@@ -383,6 +391,26 @@ export default function PaymentLinkPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Centered confirmation when payment is submitted */}
+      {isPaymentSubmitted && (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="w-full max-w-md">
+            <BuyerInput
+              buyerData={data.buyerData}
+              paymentTerm={paymentTerm}
+              setPaymentTerm={setPaymentTerm}
+              totalAmount={convert(
+                data.invoiceData.reduce(
+                  (sum, invoice) => sum + invoice.serviceAmount,
+                  0
+                )
+              )}
+              isSubmitted={true}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
