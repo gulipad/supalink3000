@@ -142,144 +142,159 @@ export default function PaymentLinkPage() {
                 }}
                 className="absolute bottom-4 mx-4 w-[calc(100%-2rem)]"
               >
-                {/* Summary Card */}
-                <Card className="bg-gray-800/80 backdrop-blur-lg border border-gray-700 shadow-2xl max-w-3xl mx-auto">
-                  <div
-                    className="px-6 py-4 cursor-pointer"
-                    onClick={toggleCardExpansion}
-                  >
-                    <div className="flex justify-between items-center">
-                      <span className="text-xl font-semibold text-white">
-                        Payment summary
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openDetailsDialog();
-                          }}
-                          className="text-white"
-                        >
-                          View full details
-                        </Button>
-                        <motion.div
-                          animate={{ rotate: isCardExpanded ? 180 : 0 }}
-                          transition={{ duration: 0.3, ease: "easeInOut" }}
-                        >
-                          <ChevronDown className="h-5 w-5 text-gray-300" />
-                        </motion.div>
-                      </div>
-                    </div>
-                  </div>
-
+                <div className="max-w-[700px] mx-auto">
                   <motion.div
-                    animate={{
-                      height: isCardExpanded ? "auto" : 0,
-                      opacity: isCardExpanded ? 1 : 0,
+                    layout
+                    initial={{ width: "700px" }}
+                    animate={{ 
+                      width: isCardExpanded ? "100%" : "400px",
+                      transition: {
+                        type: "spring",
+                        stiffness: 300,
+                        damping: 30
+                      }
                     }}
-                    initial={false}
-                    transition={{
-                      height: { duration: 0.3, ease: "easeInOut" },
-                      opacity: { duration: 0.2, ease: "easeInOut" },
-                    }}
-                    style={{ overflow: "hidden" }}
+                    className="mx-auto"
                   >
-                    <CardContent className="space-y-4 pt-0">
-                      {/* Subscription Payments Summary */}
-                      <div>
-                        <p className="text-sm font-medium text-gray-400">
-                          Subscription Payments
-                        </p>
-                        <div className="flex justify-between items-center text-sm font-medium mt-1 text-white">
-                          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                            <span>
-                              {formatDateUTC(
-                                summary.subscription.overallStartDate
-                              )}{" "}
-                              to{" "}
-                              {formatDateUTC(
-                                summary.subscription.overallEndDate
-                              )}
-                            </span>
-                            <span className="bg-gray-700 text-gray-300 px-2 py-0.5 rounded-full text-xs w-fit">
-                              {summary.subscription.totalInstallments}{" "}
-                              installments
-                            </span>
+                    <Card className="bg-gray-800/80 backdrop-blur-lg border border-gray-700 shadow-2xl">
+                      <div
+                        className="px-6 py-4 cursor-pointer"
+                        onClick={toggleCardExpansion}
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className="text-xl font-semibold text-white">
+                            Payment summary
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openDetailsDialog();
+                              }}
+                              className="text-white"
+                            >
+                              View full details
+                            </Button>
+                            <motion.div
+                              animate={{ rotate: isCardExpanded ? 180 : 0 }}
+                              transition={{ duration: 0.3, ease: "easeInOut" }}
+                            >
+                              <ChevronDown className="h-5 w-5 text-gray-300" />
+                            </motion.div>
                           </div>
-                          {summary.subscription.minInstallmentAmount !==
-                          summary.subscription.maxInstallmentAmount ? (
-                            <span className="font-bold text-xl">
-                              $
-                              {convert(
-                                summary.subscription.minInstallmentAmount
-                              ).toLocaleString(undefined, {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })}
-                              <span className="text-s font-normal"> to </span>$
-                              {convert(
-                                summary.subscription.maxInstallmentAmount
-                              ).toLocaleString(undefined, {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })}
-                              /{paymentTerm === "monthly" ? "month" : "quarter"}
-                            </span>
-                          ) : (
-                            <span className="font-bold text-xl">
-                              $
-                              {convert(
-                                summary.subscription.minInstallmentAmount
-                              ).toLocaleString(undefined, {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })}
-                              /{paymentTerm === "monthly" ? "month" : "quarter"}
-                            </span>
-                          )}
                         </div>
                       </div>
 
-                      <Separator />
-
-                      {/* One‑off Payments Summary */}
-                      {summary.oneOff.length > 0 && (
-                        <div>
-                          <p className="text-sm font-medium text-gray-400">
-                            One‑off Payments
-                          </p>
-                          <ul className="space-y-1 mt-1">
-                            {summary.oneOff.map((fee) => (
-                              <li
-                                key={fee.id}
-                                className="flex justify-between items-center text-sm font-medium text-white"
-                              >
-                                <span className="flex items-center gap-2">
-                                  {fee.serviceTitle}
-                                  <span className="bg-gray-700 text-gray-300 px-2 py-0.5 rounded-full text-xs">
-                                    Due {formatDateUTC(fee.dueDate)}
-                                  </span>
-                                </span>
-                                <span className="font-bold text-xl">
-                                  $
-                                  {convert(fee.amount).toLocaleString(
-                                    undefined,
-                                    {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    }
+                      <motion.div
+                        animate={{
+                          height: isCardExpanded ? "auto" : 0,
+                          opacity: isCardExpanded ? 1 : 0,
+                        }}
+                        initial={false}
+                        transition={{
+                          height: { duration: 0.3, ease: "easeInOut" },
+                          opacity: { duration: 0.2, ease: "easeInOut" },
+                        }}
+                        style={{ overflow: "hidden" }}
+                      >
+                        <CardContent className="space-y-4 pt-0">
+                          {/* Subscription Payments Summary */}
+                          <div>
+                            <p className="text-sm font-medium text-gray-400">
+                              Subscription Payments
+                            </p>
+                            <div className="flex justify-between items-center text-sm font-medium mt-1 text-white">
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                                <span>
+                                  {formatDateUTC(
+                                    summary.subscription.overallStartDate
+                                  )}{" "}
+                                  to{" "}
+                                  {formatDateUTC(
+                                    summary.subscription.overallEndDate
                                   )}
                                 </span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </CardContent>
+                                <span className="bg-gray-700 text-gray-300 px-2 py-0.5 rounded-full text-xs w-fit">
+                                  {summary.subscription.totalInstallments}{" "}
+                                  installments
+                                </span>
+                              </div>
+                              {summary.subscription.minInstallmentAmount !==
+                              summary.subscription.maxInstallmentAmount ? (
+                                <span className="font-bold text-xl">
+                                  $
+                                  {convert(
+                                    summary.subscription.minInstallmentAmount
+                                  ).toLocaleString(undefined, {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  })}
+                                  <span className="text-s font-normal"> to </span>$
+                                  {convert(
+                                    summary.subscription.maxInstallmentAmount
+                                  ).toLocaleString(undefined, {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  })}
+                                  /{paymentTerm === "monthly" ? "month" : "quarter"}
+                                </span>
+                              ) : (
+                                <span className="font-bold text-xl">
+                                  $
+                                  {convert(
+                                    summary.subscription.minInstallmentAmount
+                                  ).toLocaleString(undefined, {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  })}
+                                  /{paymentTerm === "monthly" ? "month" : "quarter"}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <Separator />
+
+                          {/* One‑off Payments Summary */}
+                          {summary.oneOff.length > 0 && (
+                            <div>
+                              <p className="text-sm font-medium text-gray-400">
+                                One‑off Payments
+                              </p>
+                              <ul className="space-y-1 mt-1">
+                                {summary.oneOff.map((fee) => (
+                                  <li
+                                    key={fee.id}
+                                    className="flex justify-between items-center text-sm font-medium text-white"
+                                  >
+                                    <span className="flex items-center gap-2">
+                                      {fee.serviceTitle}
+                                      <span className="bg-gray-700 text-gray-300 px-2 py-0.5 rounded-full text-xs">
+                                        Due {formatDateUTC(fee.dueDate)}
+                                      </span>
+                                    </span>
+                                    <span className="font-bold text-xl">
+                                      $
+                                      {convert(fee.amount).toLocaleString(
+                                        undefined,
+                                        {
+                                          minimumFractionDigits: 2,
+                                          maximumFractionDigits: 2,
+                                        }
+                                      )}
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </CardContent>
+                      </motion.div>
+                    </Card>
                   </motion.div>
-                </Card>
+                </div>
               </motion.div>
             </div>
           </ResizablePanel>
