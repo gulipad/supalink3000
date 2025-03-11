@@ -1,6 +1,9 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSearchParams } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
 import Dropzone from "@/components/Dropzone";
 import DocumentViewer from "@/components/DocumentViewer";
 import SubscriptionEditor from "@/components/SubscriptionEditor";
@@ -9,6 +12,51 @@ export default function HomePage() {
   // Steps: "upload" → "view"
   const [step, setStep] = useState("upload");
   const [fileData, setFileData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true); // Initialize as true
+  const searchParams = useSearchParams();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const id = searchParams.get("id");
+    if (id) {
+      fetchDataById(id);
+    } else {
+      // If no ID, we're not loading anything so set to false
+      setIsLoading(false);
+    }
+  }, [searchParams]);
+
+  const fetchDataById = async (id) => {
+    try {
+      const response = await fetch("/api/supabase", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch data");
+      }
+
+      const data = await response.json();
+      setFileData({
+        brainResponse: data,
+        fileUrl: null, // Since we don't have a file URL in this case
+      });
+      setStep("view");
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      toast({
+        variant: "destructive",
+        title: "This link does not exist",
+        description: "Please use a different one.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Uncomment this to mock an upload to work on the editor.
   // const info = {
@@ -78,6 +126,14 @@ export default function HomePage() {
     setFileData(data);
     setStep("view");
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
