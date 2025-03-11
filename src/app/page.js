@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useSearchParams } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import Dropzone from "@/components/Dropzone";
@@ -13,18 +12,27 @@ export default function HomePage() {
   const [step, setStep] = useState("upload");
   const [fileData, setFileData] = useState(null);
   const [isLoading, setIsLoading] = useState(true); // Initialize as true
-  const searchParams = useSearchParams();
   const { toast } = useToast();
 
   useEffect(() => {
-    const id = searchParams.get("id");
+    // Simulate a loading delay
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 900);
+
+    // Get the URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const id = urlParams.get("id");
+
     if (id) {
       fetchDataById(id);
     } else {
       // If no ID, we're not loading anything so set to false
       setIsLoading(false);
     }
-  }, [searchParams]);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const fetchDataById = async (id) => {
     try {
